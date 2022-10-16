@@ -12,6 +12,8 @@ library(randomForest)
 library(caret)
 library(psych)
 library(pacman)
+
+# Tỉ lệ sống sót / body (100%)
 # # Tỉ lệ số người có anh cha mẹ / con cái - chết sống (done)
 # Tỉ lệ số người có anh chị em/ vợ chồng - chết sống (done)
 # Tỉ lệ người không lên tàu (done)
@@ -28,7 +30,7 @@ library(pacman)
 # Tỉ lệ sống sót theo cabin 
 # có bao nhiêu xuồng cứu hộ (done)
 # liệt kê người trong cabin (done)
-# liệt kê người lên 1 thuyền cứu hộ
+# liệt kê người lên 1 thuyền cứu hộ(done)
 # % quê quán (done)
 # vẽ biểu đồ cho tất cả
 # Ti le con song (done)
@@ -109,7 +111,8 @@ table(train_data$survived )
 
 ########################################################################################
 ########################################################################################
-# name- get MR MS v..v
+# name- get MR MS v..v 
+# Thầy nói tuần trước
 sum(is.na(train_data$name))
 # Lấy MR mS v..v
 none_na_name <- gsub(".*[,]([^.]+)[.].*", "\\1", train_data$name)
@@ -152,8 +155,6 @@ train_data %>%
   theme_few() 
 
 
-
-
 ########################################################################################
 ########################################################################################
 # get thành phố home.dest
@@ -163,7 +164,7 @@ none_na_home_dest <- subset(train_data, !is.na(train_data$home.dest))
 none_na_home_dest
 none_na_home_dest$home.dest_after_get <- gsub("([^.]+)[,].*", "\\1", none_na_home_dest$home.dest)
 none_na_home_dest$home.dest_after_get
-none_na_home_dest$home.dest_after_get2 <- gsub("([^.]+)[,].*", "\\1", none_na_home_dest$home.dest_after_get2)
+none_na_home_dest$home.dest_after_get2 <- gsub("([^.]+)[,].*", "\\1", none_na_home_dest$home.dest_after_get)
 none_na_home_dest$home.dest_after_get2
 toString(none_na_home_dest$home.dest_after_get2)
 
@@ -234,7 +235,7 @@ gender_ratio
 # .drop nếu muốn %/ tổng số
 train_data %>%
   group_by(sex, survived) %>%
-  summarise( count = n()) %>%
+  summarise( count = n(),.groups ="drop") %>%
   mutate(percentage = round(count/sum(count)*100))
 ##################################################
 
@@ -384,8 +385,6 @@ age <- train_data %>%
 age
 
 
-
-
 ###################################################################################
 ###################################################################################
 
@@ -492,6 +491,7 @@ age_female_survived_ratio %>%
 ###################################################################################
 
 #Tỉ lệ người không lên tàu 
+
 boat_0 <- train_data %>%
   group_by(boat) %>%
   summarise(count = n())
@@ -518,7 +518,7 @@ train_data %>%
   geom_label(data = boat_0_ratio, 
              aes(x = boat, y = count, label = paste0(percentage, "%"), group = survived), 
              position = position_stack(vjust = 0.5),
-             size = 2) +
+             size = 3) +
   theme_few() 
 
 
@@ -603,6 +603,41 @@ train_data %>%
   scale_x_continuous(name= "Sibsp", breaks = 1*c(0:9)) +
   theme_few() 
 
+
 ########################################################################################
 #######################################################################################
 
+#Tỉ lệ người không có body number
+
+body_count<- train_data %>%
+  group_by(body) %>%
+  summarise(count = n())
+
+body_count
+
+
+body_ratio <- train_data %>%
+  group_by(body, survived) %>%
+  summarise( count = n(), .groups = "drop_last" ) %>%
+  mutate(percentage = round(count/sum(count)*100))
+
+body_ratio
+
+
+train_data %>%
+  ggplot() +
+  geom_bar(aes(x = body, fill = survived), width = 0.5) +
+  geom_text(data = body_count, 
+            aes(x = body, y = count, label = count), 
+            position = position_dodge(width=0.9), 
+            vjust=-1, 
+            fontface = "bold") +
+  geom_label(data = body_ratio, 
+             aes(x = body, y = count, label = paste0(percentage, "%"), group = survived), 
+             position = position_stack(vjust = 0.5),
+             size = 2) +
+  theme_few() 
+
+
+###################################################################################
+###################################################################################
