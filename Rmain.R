@@ -11,7 +11,6 @@ library(RColorBrewer)
 library(randomForest)
 library(caret)
 library(psych)
-library(qdap)
 library(pacman)
 # # Tỉ lệ số người có anh cha mẹ / con cái - chết sống (done)
 # Tỉ lệ số người có anh chị em/ vợ chồng - chết sống (done)
@@ -30,12 +29,12 @@ library(pacman)
 # có bao nhiêu xuồng cứu hộ (done)
 # liệt kê người trong cabin (done)
 # liệt kê người lên 1 thuyền cứu hộ
-# % quê quán
+# % quê quán (done)
 # vẽ biểu đồ cho tất cả
-# Ti le con song
-# Co bao nhieu nguoi trong moi khoang
-# co bao nhieu cap anh chi em / vo chong tren tau
-# Co ba me tren tau hay khong
+# Ti le con song (done)
+# Co bao nhieu nguoi trong moi khoang (done)
+# co bao nhieu cap anh chi em / vo chong tren tau(done)
+# Co ba me tren tau hay khong (done)
 # sibsp mean the number of siblings or spouse of
 # parch mean Number of Parents/Children Aboard
 # fare : gia ve
@@ -102,10 +101,13 @@ sum(is.na(train_data))
 
 
 #Tính toán
+# Chuyển 0 , 1 thành Died và Survived
 table(train_data$survived )
 train_data$survived <- factor(train_data$survived, levels = c(0, 1), labels = c("Died", "Survived"))
 table(train_data$survived )
 
+
+########################################################################################
 ########################################################################################
 # name- get MR MS v..v
 sum(is.na(train_data$name))
@@ -149,6 +151,36 @@ train_data %>%
              position = position_stack(vjust = 0.5)) +
   theme_few() 
 
+
+
+
+########################################################################################
+########################################################################################
+# get thành phố home.dest
+sum(is.na(train_data$home.dest))
+# get thành phố home.dest loại Na
+none_na_home_dest <- subset(train_data, !is.na(train_data$home.dest))
+none_na_home_dest
+none_na_home_dest$home.dest_after_get <- gsub("([^.]+)[,].*", "\\1", none_na_home_dest$home.dest)
+none_na_home_dest$home.dest_after_get
+none_na_home_dest$home.dest_after_get2 <- gsub("([^.]+)[,].*", "\\1", none_na_home_dest$home.dest_after_get2)
+none_na_home_dest$home.dest_after_get2
+toString(none_na_home_dest$home.dest_after_get2)
+
+# Tương quan giữa name_after_get và số lương
+none_na_home.dest_count <- none_na_home_dest%>%
+  group_by(home.dest_after_get2) %>%
+  summarise(count = n())
+
+none_na_home.dest_count 
+# Biểu đồ tương quan giữa name_after_gaet và số lượng
+# Tương quan giữa name_after_get và số lương - sống/ chết - %
+home.dest_after_get_ratio <- none_na_home_dest %>%
+  group_by(home.dest_after_get2, survived) %>%
+  summarise( count = n(), .groups = "drop_last") %>%
+  mutate(percentage = round(count/sum(count)*100))
+home.dest_after_get_ratio
+
 ########################################################################################
 # Có bao nhiêu nam chết, nam sống, nữ chết, nữ sống
 ########################################################################################
@@ -160,12 +192,6 @@ table(train_data$sex)
 train_data %>% 
   group_by( sex ) %>% 
   summarise( percent = 100 * n() / nrow( train_data ) )
-
-
-# Chuyển 0 , 1 thành Died và Survived
-table(train_data$survived )
-train_data$survived <- factor(train_data$survived, levels = c(0, 1), labels = c("Died", "Survived"))
-table(train_data$survived )
 
 # Biểu đồ tương quan chết - sống
 train_data %>% 
@@ -472,6 +498,7 @@ boat_0 <- train_data %>%
 
 boat_0
 
+
 boat_0_ratio <- train_data %>%
   group_by(boat, survived) %>%
   summarise( count = n(), .groups = "drop_last" ) %>%
@@ -578,3 +605,4 @@ train_data %>%
 
 ########################################################################################
 #######################################################################################
+
