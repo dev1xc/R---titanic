@@ -11,7 +11,8 @@ library(RColorBrewer)
 library(randomForest)
 library(caret)
 library(psych)
-
+library(qdap)
+library(pacman)
 # # Tỉ lệ số người có anh cha mẹ / con cái - chết sống (done)
 # Tỉ lệ số người có anh chị em/ vợ chồng - chết sống (done)
 # Tỉ lệ người không lên tàu (done)
@@ -21,13 +22,13 @@ library(psych)
 # Tìm giá vé min - max của một pclass (done)
 # Tỉ lệ người sống sót embarked (done)
 # Tỉ lệ người sống sót pclass (done)
-# Tách MR, Miss
+# Tách MR, Miss (done)
 # Có bao nhiêu nam chết, nam sống, nữ chết, nữ sống (done)
 # % nam chết, nam sống, nữ chết, nữ sống (done)
 # tuổi trung bình nam, nữ / tuổi min max nam nữ (done)
 # Tỉ lệ sống sót theo cabin 
 # có bao nhiêu xuồng cứu hộ (done)
-# liệt kê người trong cabin 
+# liệt kê người trong cabin (done)
 # liệt kê người lên 1 thuyền cứu hộ
 # % quê quán
 # vẽ biểu đồ cho tất cả
@@ -101,7 +102,52 @@ sum(is.na(train_data))
 
 
 #Tính toán
+table(train_data$survived )
+train_data$survived <- factor(train_data$survived, levels = c(0, 1), labels = c("Died", "Survived"))
+table(train_data$survived )
 
+########################################################################################
+# name- get MR MS v..v
+sum(is.na(train_data$name))
+# Lấy MR mS v..v
+none_na_name <- gsub(".*[,]([^.]+)[.].*", "\\1", train_data$name)
+none_na_name
+
+toString(none_na_name )
+# Tương quan giữa name_after_get và số lương
+train_data$name_after_get <- none_na_name
+none_na_name_count <- train_data%>%
+  group_by(name_after_get) %>%
+  summarise(count = n())
+
+none_na_name_count
+# Biểu đồ tương quan giữa name_after_gaet và số lượng
+train_data %>% 
+  ggplot(aes(x = name_after_get)) +
+  geom_bar(width=0.5) +
+  geom_text(stat='count', aes(label=stat(count)), vjust=-0.5) +
+  theme_classic()
+
+# Tương quan giữa name_after_get và số lương - sống/ chết - %
+name_after_get_ratio <- train_data %>%
+  group_by(name_after_get, survived) %>%
+  summarise( count = n(), .groups = "drop_last") %>%
+  mutate(percentage = round(count/sum(count)*100))
+name_after_get_ratio
+
+# Biểu đồ Tương quan giữa name_after_get và số lương - sống/ chết - %
+train_data %>%
+  ggplot() +
+  geom_bar(aes(x = name_after_get, fill = survived)) +
+  geom_text(data = none_na_name_count, 
+            aes(x = name_after_get, y = count, label = count), 
+            position = position_dodge(width=0.9), 
+            vjust=-0.25, 
+            fontface = "bold") +
+  geom_label(data = name_after_get_ratio,
+             aes(x = name_after_get, y = count, label = paste0(percentage, "%"), group = survived), 
+             position = position_stack(vjust = 0.5)) +
+  theme_few() 
 
 ########################################################################################
 # Có bao nhiêu nam chết, nam sống, nữ chết, nữ sống
@@ -532,7 +578,3 @@ train_data %>%
 
 ########################################################################################
 #######################################################################################
-# home.dest
-sum(is.na(train_data))
-none_na_home_dest <- subset(train_data, !is.na(train_data$home.dest))
-none_na_home_dest
