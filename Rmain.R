@@ -12,13 +12,43 @@ library(randomForest)
 library(caret)
 library(psych)
 
-train_data <- read_xls("E:/titanic.xls")
+# # Tỉ lệ số người có anh cha mẹ / con cái - chết sống (done)
+# Tỉ lệ số người có anh chị em/ vợ chồng - chết sống (done)
+# Tỉ lệ người không lên tàu (done)
+# Tỉ lệ sống sót / tuổi của nam (done)
+# Tỉ lệ sống sót / tuổi của nữ (done)
+# Tìm giá vé min - max của một embarked (done)
+# Tìm giá vé min - max của một pclass (done)
+# Tỉ lệ người sống sót embarked (done)
+# Tỉ lệ người sống sót pclass (done)
+# Tách MR, Miss
+# Có bao nhiêu nam chết, nam sống, nữ chết, nữ sống (done)
+# % nam chết, nam sống, nữ chết, nữ sống (done)
+# tuổi trung bình nam, nữ / tuổi min max nam nữ (done)
+# Tỉ lệ sống sót theo cabin 
+# có bao nhiêu xuồng cứu hộ (done)
+# liệt kê người trong cabin 
+# liệt kê người lên 1 thuyền cứu hộ
+# % quê quán
+# vẽ biểu đồ cho tất cả
+# Ti le con song
+# Co bao nhieu nguoi trong moi khoang
+# co bao nhieu cap anh chi em / vo chong tren tau
+# Co ba me tren tau hay khong
+# sibsp mean the number of siblings or spouse of
+# parch mean Number of Parents/Children Aboard
+# fare : gia ve
+# embarked - Port of Embarkation (C = Cherbourg; Q = Queenstown; S = Southampton)
+#body - Body number (if did not survive and body was recovered)
+
+
+train_data <- read_xls("E:/school/R/titanic.xls")
 head(train_data)
 
 
 unique(train_data$name)
 
-train_data$age <- round(train_data$age)
+train_data$age <- round(train_data$age,2)
 
 #Làm sạch dữ liệu (Loại dữ liệu trống)
 nrow(train_data)
@@ -32,7 +62,6 @@ sum(is.na(train_data$age))
 median(train_data$age, na.rm=TRUE)
 train_data$age[is.na(train_data$age)] <- median(train_data$age,na.rm = T)
 
-round(train_data$age)
 train_data[! train_data$age %in% boxplot.stats(train_data$age)$out,]
 
 #Fare
@@ -58,6 +87,7 @@ train_data$body[is.na(train_data$body)] <- 0
 sum(is.na(train_data))
 
 
+
 #Embarked
 table(train_data$embarked)
 sum(is.na(train_data$embarked))
@@ -67,38 +97,45 @@ train_data$embarked[is.na(train_data$embarked)] <- "S"
 sum(is.na(train_data))
 
 
+
+
+
 #Tính toán
 
-# Tổng người nam - nữ
+
+########################################################################################
+# Có bao nhiêu nam chết, nam sống, nữ chết, nữ sống
+########################################################################################
+
+# Tương quan số lượng nam nữ
 table(train_data$sex)
 
-# % nam - nu tren tàu
+# % nam - nữ trên tàu
 train_data %>% 
   group_by( sex ) %>% 
   summarise( percent = 100 * n() / nrow( train_data ) )
 
 
-#Ti le song sot
-Survived <- factor(train_data$survived)
+# Chuyển 0 , 1 thành Died và Survived
 table(train_data$survived )
 train_data$survived <- factor(train_data$survived, levels = c(0, 1), labels = c("Died", "Survived"))
-Survived <- factor(train_data$survived, levels = c(0, 1), labels = c("Died", "Survived"))
-table(Survived )
+table(train_data$survived )
 
-
+# Biểu đồ tương quan chết - sống
 train_data %>% 
-ggplot(aes(x = survived)) +
-  geom_bar(width=0.5, fill = "coral") +
+ggplot(aes(x = survived, fill = survived)) +
+  geom_bar(width=0.5) +
   geom_text(stat='count', aes(label=stat(count)), vjust=-0.5) +
   theme_classic()
 
 
-#% song sot
+# % sống sót
 percentage_survived<- train_data %>% 
   group_by( survived ) %>% 
   summarise( percent = round(100 * n() / nrow( train_data ) ))
 percentage_survived
 
+# Biểu đồ % chết sống
 train_data %>% 
   ggplot(aes(x = survived,fill = survived)) +
   geom_bar(width=0.5) +
@@ -108,35 +145,29 @@ train_data %>%
              position = position_stack(vjust = 5)) +
   theme_classic()
 
-
-
-
-
 # phan bo gioi tinh boi ti le song sot
-
-
 gender <- train_data %>%
   group_by(sex) %>%
   summarise(count = n())
-
 gender
 
+# Bảng tương quan giữa nam - nữ - chết - sống
 gender_ratio <- train_data %>%
   group_by(sex, survived) %>%
   summarise( count = n(), .groups = "drop_last") %>%
   mutate(percentage = round(count/sum(count)*100))
-
 gender_ratio
 
-train_data %>% 
-  ggplot(aes(x = sex,fill = survived)) +
-  geom_bar(width = 0.4) +
-  geom_label(data = gender_ratio, 
-             aes(x = sex, y = count, label = paste0(percentage, "%"), group = survived), 
-             position = position_stack(vjust = 0.5)) +
-  theme_classic()
+##################################################
+# .drop nếu muốn %/ tổng số
+train_data %>%
+  group_by(sex, survived) %>%
+  summarise( count = n()) %>%
+  mutate(percentage = round(count/sum(count)*100))
+##################################################
 
 
+# Biểu đồ tương quan nam - nữ - chết sống
 train_data %>%
   ggplot() +
   geom_bar(aes(x = sex, fill = survived)) +
@@ -150,8 +181,8 @@ train_data %>%
              position = position_stack(vjust = 0.5)) +
   theme_few() 
 
-
-#########################################################
+#######################################################################################
+#######################################################################################
 # Tim max cua 1 embark
 subset(train_data, is.na(train_data$fare))
 fare_max_C <- subset(train_data, train_data$embarked=="C")
@@ -283,15 +314,17 @@ age
 
 
 
+###################################################################################
+###################################################################################
 
 
-
-# TI le song sot cua tuoi cua nam
+# Tỉ lệ sống sót trên tuổi của nam
 
 subset(train_data, is.na(train_data$survived))
 age_men_survived_ratio <- subset(train_data, train_data$sex =="male" )
 age_men_survived_ratio
 
+# Tương quan giữa tuổi - số lượng
 
 age_men_survived_ratio_calc <- age_men_survived_ratio %>%
   group_by(age) %>%
@@ -299,6 +332,17 @@ age_men_survived_ratio_calc <- age_men_survived_ratio %>%
 
 age_men_survived_ratio_calc
 
+# Tuổi min nam
+min(age_men_survived_ratio$age , na.rm = TRUE) 
+# Tuổi max nam
+max(age_men_survived_ratio$age , na.rm = TRUE) 
+# Tuổi trung bình nam
+is.na(train_data$age)
+median(age_men_survived_ratio$age , na.rm = TRUE)  
+
+
+
+# Tương quan tuổi - tình trạng sống/ chết  - số lương - %
 age_men_ratio <- age_men_survived_ratio %>%
   group_by(age, survived) %>%
   summarise( count = n(), .groups = "drop" ) %>%
@@ -336,6 +380,19 @@ age_female_survived_ratio_calc <- age_female_survived_ratio %>%
 
 age_female_survived_ratio_calc
 
+
+# Tuổi min nữ
+min(age_female_survived_ratio$age , na.rm = TRUE) 
+# Tuổi max nữ
+max(age_female_survived_ratio$age , na.rm = TRUE) 
+# Tuổi trung bình nữ
+is.na(train_data$age)
+median(age_female_survived_ratio$age , na.rm = TRUE)  
+
+
+
+
+
 age_female_ratio <- age_female_survived_ratio %>%
   group_by(age, survived) %>%
   summarise( count = n(), .groups = "drop" ) %>%
@@ -359,9 +416,10 @@ age_female_survived_ratio %>%
   scale_x_continuous(name= "Passenger Age", breaks = 1*c(0:80)) +
   scale_y_continuous(name = "Passenger Count")
 
+###################################################################################
+###################################################################################
 
-
-#Ti le nan nhan khong len tau nam - nu
+#Tỉ lệ người không lên tàu 
 boat_0 <- train_data %>%
   group_by(boat) %>%
   summarise(count = n())
@@ -378,11 +436,11 @@ boat_0_ratio
 
 train_data %>%
   ggplot() +
-  geom_bar(aes(x = boat, fill = survived)) +
+  geom_bar(aes(x = boat, fill = survived), width = 0.5) +
   geom_text(data = boat_0, 
             aes(x = boat, y = count, label = count), 
             position = position_dodge(width=0.9), 
-            vjust=-0.25, 
+            vjust=-1, 
             fontface = "bold") +
   geom_label(data = boat_0_ratio, 
              aes(x = boat, y = count, label = paste0(percentage, "%"), group = survived), 
@@ -390,3 +448,91 @@ train_data %>%
              size = 2) +
   theme_few() 
 
+
+###################################################################################
+###################################################################################
+
+#Tỉ lệ sống sót theo cabin
+cabin_count <- train_data %>%
+  group_by(cabin) %>%
+  summarise(count = n())
+
+cabin_count
+
+cabin_ratio <- train_data %>%
+  group_by(cabin, survived) %>%
+  summarise( count = n(), .groups = "drop_last" ) %>%
+  mutate(percentage = round(count/sum(count)*100))
+
+cabin_ratio
+###################################################################################
+###################################################################################
+
+# Tỉ lệ số người đi với cha mẹ, con cái ... - chết /sống
+
+parch_count <- train_data %>%
+  group_by(parch) %>%
+  summarise(count = n())
+
+parch_count
+
+parch_ratio <- train_data %>%
+  group_by(parch, survived) %>%
+  summarise( count = n(), .groups = "drop_last" ) %>%
+  mutate(percentage = round(count/sum(count)*100))
+
+parch_ratio
+
+train_data %>%
+  ggplot() +
+  geom_bar(aes(x = parch, fill = survived), width = 0.5) +
+  geom_text(data = parch_count, 
+            aes(x = parch, y = count, label = count), 
+            position = position_dodge(width=0.9), 
+            vjust=-1, 
+            fontface = "bold") +
+  geom_label(data = parch_ratio, 
+             aes(x = parch, y = count, label = paste0(percentage, "%"), group = survived), 
+             position = position_stack(vjust = 0.5),
+             size = 2) +
+  scale_x_continuous(name= "Parch", breaks = 1*c(0:9)) +
+  theme_few() 
+##########################################################################################
+##########################################################################################
+
+# Tỉ lệ số người có anh chị em/ vợ chồng - chết sống
+
+sibsp_count <- train_data %>%
+  group_by(sibsp) %>%
+  summarise(count = n())
+
+sibsp_count
+
+sibsp_ratio <- train_data %>%
+  group_by(sibsp, survived) %>%
+  summarise( count = n(), .groups = "drop_last" ) %>%
+  mutate(percentage = round(count/sum(count)*100))
+
+sibsp_ratio
+
+train_data %>%
+  ggplot() +
+  geom_bar(aes(x = sibsp, fill = survived), width = 0.5) +
+  geom_text(data = sibsp_count, 
+            aes(x = sibsp, y = count, label = count), 
+            position = position_dodge(width=0.9), 
+            vjust=-1, 
+            fontface = "bold") +
+  geom_label(data = sibsp_ratio, 
+             aes(x = sibsp, y = count, label = paste0(percentage, "%"), group = survived), 
+             position = position_stack(vjust = 0.5),
+             size = 2) +
+  scale_x_continuous(name= "Sibsp", breaks = 1*c(0:9)) +
+  theme_few() 
+
+########################################################################################
+#######################################################################################
+# home.dest
+sum(is.na(train_data))
+none_na_home_dest <- subset(train_data, !is.na(train_data$home.dest))
+none_na_home_dest
